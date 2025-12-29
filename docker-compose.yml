@@ -64,6 +64,7 @@ services:
     ports:
       - "${NGINX_PORT_3000}:3000"
       - "${NGINX_PORT_3001}:3001"
+      - "${NGINX_PORT_3002}:3002"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
