@@ -47,11 +47,12 @@ services:
   admin:
     build:
       context: ../jejinni-admin
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.build
     image: admin:latest
     container_name: jejinni-admin
     volumes:
-      - admin_build:/app/dist
+      - admin_build:/app/admin
+    command: sh -c "cp -r /app/dist/* /app/admin/ && tail -f /dev/null"
     networks:
       - jejinni-network
     restart: "no"
