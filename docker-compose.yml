@@ -27,8 +27,6 @@ services:
       dockerfile: Dockerfile
     image: server:prod
     container_name: jejinni-server
-    env_file:
-      - .env
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       JASYPT_ENCRYPTOR_PASSWORD: ${JASYPT_ENCRYPTOR_PASSWORD}
