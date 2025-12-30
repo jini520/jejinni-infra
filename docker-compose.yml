@@ -96,6 +96,7 @@ services:
     depends_on:
       - admin
       - client
+      - client-staging
     networks:
       - jejinni-network
     restart: unless-stopped
