@@ -53,11 +53,13 @@ services:
       - jejinni-network
     restart: "no"
 
-  # Client Frontend (Next.js)
+  # Client Frontend (Next.js) - main 브랜치
   client:
     build:
       context: ../jejinni-client
       dockerfile: Dockerfile
+      args:
+        GIT_BRANCH: main
     image: client:latest
     container_name: jejinni-client
     ports:
