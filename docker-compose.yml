@@ -35,6 +35,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ${UPLOADS_HOST_PATH}:${UPLOADS_CONTAINER_PATH}
     networks:
       - jejinni-network
     restart: unless-stopped
