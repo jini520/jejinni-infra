@@ -69,34 +69,34 @@ services:
     restart: "no"
 
   # Client Frontend (Next.js) - main 브랜치
-  client:
-    build:
-      context: ../jejinni-client
-      dockerfile: Dockerfile
-      args:
-        GIT_BRANCH: main
-    image: client:latest
-    container_name: jejinni-client
-    ports:
-      - "${CLIENT_PORT}:3000"
-    networks:
-      - jejinni-network
-    restart: unless-stopped
+  # client:
+  #   build:
+  #     context: ../jejinni-client
+  #     dockerfile: Dockerfile
+  #     args:
+  #       GIT_BRANCH: main
+  #   image: client:latest
+  #   container_name: jejinni-client
+  #   ports:
+  #     - "${CLIENT_PORT}:3000"
+  #   networks:
+  #     - jejinni-network
+  #   restart: unless-stopped
 
-  # Client Frontend Staging (Next.js) - develop 브랜치
-  client-staging:
-    build:
-      context: ../jejinni-client
-      dockerfile: Dockerfile.staging
-      args:
-        GIT_BRANCH: develop
-    image: client:staging
-    container_name: jejinni-client-staging
-    ports:
-      - "${CLIENT_STAGING_PORT}:3000"
-    networks:
-      - jejinni-network
-    restart: unless-stopped
+  # # Client Frontend Staging (Next.js) - develop 브랜치
+  # client-staging:
+  #   build:
+  #     context: ../jejinni-client
+  #     dockerfile: Dockerfile.staging
+  #     args:
+  #       GIT_BRANCH: develop
+  #   image: client:staging
+  #   container_name: jejinni-client-staging
+  #   ports:
+  #     - "${CLIENT_STAGING_PORT}:3000"
+  #   networks:
+  #     - jejinni-network
+  #   restart: unless-stopped
 
   # Nginx 리버스 프록시 (Oracle Instance에서 3000, 3001 포트로 요청)
   nginx:
@@ -115,8 +115,8 @@ services:
     depends_on:
       - admin
       - client-static
-      - client
-      - client-staging
+      # - client
+      # - client-staging
     networks:
       - jejinni-network
     restart: unless-stopped
