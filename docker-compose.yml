@@ -56,9 +56,9 @@ services:
     restart: "no"
 
   client-static:
-    build: 
-      context: ../jejinni-client/apps/portfolio
-      dockerfile: Dockerfile.build
+    build:
+      context: ../jejinni-client
+      dockerfile: apps/portfolio/Dockerfile.build
     image: client:static
     container_name: jeinni-client-static
     volumes:
