@@ -55,6 +55,19 @@ services:
       - jejinni-network
     restart: "no"
 
+  client-static:
+    build: 
+      context: ../jejinni-client/apps/portfolio
+      dockerfile: Dockerfile.build
+    image: client:static
+    container_name: jeinni-client-static
+    volumes:
+      - client_build:/app/client
+    command: sh -c "cp -r /app/dist/* /app/client/ && tail -f /dev/null"
+    networks:
+      - jejinni-network
+    restart: "no"
+    
   # Client Frontend (Next.js) - main 브랜치
   client:
     build:
