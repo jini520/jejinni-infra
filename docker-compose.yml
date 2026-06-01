@@ -44,8 +44,8 @@ services:
   # Admin Frontend (React + Vite) - 빌드된 정적 파일 서빙
   admin:
     build:
-      context: ../jejinni-admin
-      dockerfile: Dockerfile.build
+      context: ../jejinni-client
+      dockerfile: apps/admin/Dockerfile.build
     image: admin:latest
     container_name: jejinni-admin
     volumes:
@@ -58,7 +58,7 @@ services:
   client-static:
     build:
       context: ../jejinni-client
-      dockerfile: apps/portfolio/Dockerfile.build
+      dockerfile: apps/react/Dockerfile.build
     image: client:static
     container_name: jeinni-client-static
     volumes:
