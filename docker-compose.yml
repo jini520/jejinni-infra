@@ -2,17 +2,16 @@ services:
   # PostgreSQL 데이터베이스
   postgres:
     image: postgres:16-alpine
-    container_name: jejinni-postgres
+    container_name: postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - jejinni-network
+    networks: [network]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
@@ -23,112 +22,92 @@ services:
   # Backend Server (Spring Boot)
   server:
     build:
-      context: ../jejinni-server
+      context: ../jinni-server
       dockerfile: Dockerfile
     image: server:prod
-    container_name: jejinni-server
+    container_name: server
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       JASYPT_ENCRYPTOR_PASSWORD: ${JASYPT_ENCRYPTOR_PASSWORD}
-    ports:
-      - "${SERVER_PORT:-8080}:8080"
+    # 호스트 노출 없음 — nginx가 /api로 내부(server:8080) 프록시
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
       - ${UPLOADS_HOST_PATH}:${UPLOADS_CONTAINER_PATH}
-    networks:
-      - jejinni-network
+    networks: [network]
     restart: unless-stopped
 
-  # Admin Frontend (React + Vite) - 빌드된 정적 파일 서빙
+  # Admin (Vite) - 빌드 후 정적파일을 볼륨에 복사 → nginx 서빙
   admin:
     build:
-      context: ../jejinni-client
+      context: ../jinni-client
       dockerfile: apps/admin/Dockerfile.build
     image: admin:latest
-    container_name: jejinni-admin
+    container_name: admin
     volumes:
       - admin_build:/app/admin
-    command: sh -c "cp -r /app/dist/* /app/admin/ && tail -f /dev/null"
-    networks:
-      - jejinni-network
+    command: sh -c "cp -r /app/dist/* /app/admin/"
+    networks: [network]
     restart: "no"
 
-  client-static:
+  # Client (Next.js SSR) - profile: next 일 때만
+  client-next:
+    profiles: ["next"]
     build:
-      context: ../jejinni-client
+      context: ../jinni-client
+      dockerfile: apps/next/Dockerfile
+    image: client:next
+    container_name: client
+    networks: [network]
+    restart: unless-stopped
+
+  # Client (React/Vite 정적) - profile: react 일 때만
+  client-react:
+    profiles: ["react"]
+    build:
+      context: ../jinni-client
       dockerfile: apps/react/Dockerfile.build
-    image: client:static
-    container_name: jeinni-client-static
+    image: client:react
+    container_name: client
     volumes:
       - client_build:/app/client
-    command: sh -c "cp -r /app/dist/* /app/client/ && tail -f /dev/null"
-    networks:
-      - jejinni-network
+    command: sh -c "cp -r /app/dist/* /app/client/"
+    networks: [network]
     restart: "no"
 
-  # Client Frontend (Next.js) - main 브랜치
-  # client:
-  #   build:
-  #     context: ../jejinni-client
-  #     dockerfile: Dockerfile
-  #     args:
-  #       GIT_BRANCH: main
-  #   image: client:latest
-  #   container_name: jejinni-client
-  #   ports:
-  #     - "${CLIENT_PORT}:3000"
-  #   networks:
-  #     - jejinni-network
-  #   restart: unless-stopped
-
-  # # Client Frontend Staging (Next.js) - develop 브랜치
-  # client-staging:
-  #   build:
-  #     context: ../jejinni-client
-  #     dockerfile: Dockerfile.staging
-  #     args:
-  #       GIT_BRANCH: develop
-  #   image: client:staging
-  #   container_name: jejinni-client-staging
-  #   ports:
-  #     - "${CLIENT_STAGING_PORT}:3000"
-  #   networks:
-  #     - jejinni-network
-  #   restart: unless-stopped
-
-  # Nginx 리버스 프록시 (Oracle Instance에서 3000, 3001 포트로 요청)
+  # Nginx (3000=client, 3001=admin)
   nginx:
     image: nginx:alpine
-    container_name: jejinni-nginx
+    container_name: nginx
     ports:
       - "${NGINX_PORT_3000}:3000"
       - "${NGINX_PORT_3001}:3001"
-      - "${NGINX_PORT_3002}:3002"
-      - "${NGINX_PORT_3003}:3003"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/conf.d/_api-proxy.conf:/etc/nginx/conf.d/_api-proxy.conf:ro
+      - ./nginx/conf.d/admin.conf:/etc/nginx/conf.d/admin.conf:ro
+      # COMPOSE_PROFILES(next|react)에 따라 client conf 자동 선택
+      - ./nginx/conf.d/client-${COMPOSE_PROFILES:-next}.conf:/etc/nginx/conf.d/client.conf:ro
       - admin_build:/app/admin:ro
       - client_build:/app/client:ro
     depends_on:
-      - admin
-      - client-static
-      # - client
-      # - client-staging
-    networks:
-      - jejinni-network
+      admin:
+        condition: service_completed_successfully
+    networks: [network]
     restart: unless-stopped
 
 volumes:
+  # postgres_data: external → compose가 생성/삭제 안 함 (down -v 사고 방지). 사전에 수동 생성한 볼륨 사용.
+  # admin_build/client_build: 휘발성(매 빌드 재생성)이라 compose 관리, 이름만 고정.
   postgres_data:
-    driver: local
+    external: true
+    name: jinni_postgres_data
   admin_build:
-    driver: local
+    name: jinni_admin_build
   client_build:
-    driver: local
+    name: jinni_client_build
 
 networks:
-  jejinni-network:
+  network:
     driver: bridge
